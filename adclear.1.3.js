@@ -138,6 +138,7 @@
             'click.aliyun.com/m',
             'click.tanx.com/ct',
             's.click.taobao.com/t',
+            'render.alipay.com/p/s/taobaonpm_click',
             
             // 网易
             'img1.126.net/channel',
