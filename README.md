@@ -1,0 +1,2 @@
+# adclear
+Browser AdClear Plugin
