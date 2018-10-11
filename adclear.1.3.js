@@ -8,10 +8,14 @@
  * Date: 2018-10-11T11:07:42.680Z
  */
 /*
-    全局属性：
-    _showADClearLog = true; // 增加全局配置参数可输出更多日志
+    安装：
+    http://adclear.fanjs.net
+    
     浏览器标签：
-    javascript:(function(){var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/11ad4aa20f9cbefc4cbe767a9232d9e2b259ca5b/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading AdClear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
+    javascript:(function(){var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/master/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading Adclear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
+    
+    显示细节日志：
+    _showADClearLog = true; // 增加全局配置参数可输出更多日志
  */
 _showADClearLog = true;
 ( function() {
