@@ -1,44 +1,60 @@
-/**
+/*!
  * Browser AdClear Plugin 1.3
  * https://github.com/diky87688973/adclear
- *
- * 广告清理-PC版
- * v1.3 增加属性规则
- * v1.2 清理内容广告
- * v1.1 清理浮动广告
  * 
- * @author Fan
- * @lastModify 2018-09-27
+ * Includes jQuery MD5 Plugin 1.2.1
+ * https://github.com/blueimp/jQuery-MD5
  * 
- * 全局属性：
- * _showADClearLog = true; // 增加全局配置参数可输出更多日志
- * 浏览器标签：
- * javascript:(function(){var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/11ad4aa20f9cbefc4cbe767a9232d9e2b259ca5b/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading AdClear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
+ * Date: 2018-10-11T11:07:42.680Z
  */
-
+/*
+    全局属性：
+    _showADClearLog = true; // 增加全局配置参数可输出更多日志
+    浏览器标签：
+    javascript:(function(){var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/11ad4aa20f9cbefc4cbe767a9232d9e2b259ca5b/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading AdClear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
+ */
+_showADClearLog = true;
 ( function() {
     
     var
     _version = '1.3',
+    
+    // 清理策略:
+    // auto      - 自动策略(默认策略,根据每个广告元素所处场景,选择最优的清理方式)
+    // invisible - 占位隐藏
+    // hide      - 直接隐藏
+    // movehide  - 移开隐藏
+    // remove    - 从文档摘除
+    _clearType = 'auto',
+    
+    // 忽略检查规则, 符合规则的元素会被忽略检查(视为非广告元素)
+    _ignoreTagNamesReg   = /^h[1-6]|input|textarea|select|script|link|style$/i, // 以标签名忽略
+    _ignoreClassNamesReg = /\b_YWF_ADBOX\b/i, // 以样式名忽略
+    
+    // # 检索可能是广告元素的正则
+    _tagNamesReg_box = /^div|a|img|table|iframe|span|ul|ins|em$/i,  // 符合定位检测的元素
+    _tagNamesReg_url = /^iframe|embed|object|a|img$/i,              // 符合URL检测的元素
+    
+    // 符合background-image广告检测的元素, 以最小尺寸判别, 小于该尺寸不检查
+    _minBgImgWidth  = 50,
+    _minBgImgHeight = 50;
 
-    // # 当前站点域名
+    // 记录查到的数量, 仅用于输出调试
+    _findBoxRuleCount    = 0,
+    _findAttrRuleCount   = 0,
+    _findDomainRuleCount = 0,
+    
+    // 当前站点域名
     _currDomain = location.hostname.toLowerCase(),
+    
     // 确定的广告元素
     _adElems = [],
+    
     // 临时存放已经检测过的域名, 便于快速检测
     _tempFilterDomains = {},
     
     // 被清理的广告元素标识
     _clearProperty = '_a' + 'd_bo' + 'x_wr' + 'ap_cle' + 'aned_',
-    
-    // # 检索可能是广告元素的正则
-    _tagNamesReg_pos = /^div|a|img|table|iframe|span|ul|ins|em$/i,  // 通过定位判定
-    _tagNamesReg_url = /^iframe|embed|object|a|img$/i,              // 通过路径判定
-
-    // 记录查到的数量, 仅用于输出调试
-    _findBoxRuleCount = 0,
-    _findAttrRuleCount = 0,
-    _findDomainRuleCount = 0,
     
     
     // # 广告box模型规则(适用于浮动层广告)
@@ -48,14 +64,14 @@
     _boxRules = [ {
         // css 规则, 边距范围, 适用[右下角弹窗]
         type : 'css',
-        positionReg : /fixed|absolute/,
+        positionReg : /^fixed|absolute$/,
         bottom : '-10,50', // 区间[0,30],或者[-10,20],或-10,50;10,30，多个组合用;号隔开
         right : '-10,50',
         width : '200,500',
         height : '200,400'
     }, {
         type : 'css',   // 左下角,方形
-        positionReg : /fixed|absolute/,
+        positionReg : /^fixed|absolute$/,
         bottom : '-10,50',
         left : '-10,50',
         width : '200,500',
@@ -112,7 +128,7 @@
         src : '226f3b9ff1d0f1fc465991b291e49c08'
     } ],
     
-    // # 常见广告域名(适用于内容嵌入广告)
+    // # URL匹配规则, 广告域名, 适用于内容嵌入广告
     _adDomains = [
             // 百度
             'pos.baidu.com',
@@ -120,6 +136,7 @@
             'entry.baidu.com/rp/home',
             'ubmcmm.baidustatic.com/media/v1',
             'www.baidu.com/cb.php',
+            
             // 百度贴吧嵌入式广告
             'www.baidu.com/baidu.php?url=',
             
@@ -150,15 +167,15 @@
             'strip.taobaocdn.com',                  // 淘宝
             'inte.sogou.com/ct',                    // 搜狗
             'x.jd.com/exsites',                     // 京东
-            'g.fastapi.net/qa',                     // 互众广告
-            'g.ggxt.net/qa',                        // 蘑菇街?
-            'c.l.qq.com/lclick',                    // 腾讯广告
+            'g.fastapi.net/qa',                     // 互众
+            'c.l.qq.com/lclick',                    // 腾讯
             'd1.sina.com.cn/litong/zhitou/sinaads', // 新浪
             'saxn.sina.com.cn/dsp/click',
             'saxn.sina.com.cn/mfp/click',
             'ads.vamaker.com',                      // 万流客
             'same.chinadaily.com.cn/s?',            // 中国日报网
-            'img-ads.csdn.net',                     // csdn
+            'img-ads.csdn.net',                     // CSDN
+            's3m.mediav.com',                       // 聚效
             
             // google
             'www.googleadservices.com',
@@ -186,6 +203,7 @@
             'dol.deliver.ifeng.com/c',
             
             // 其他
+            'g.ggxt.net/qa',
             'wa.gtimg.com',
             'www.cokolo.cn',
             'swa.gtimg.com/web/snswin',
@@ -194,10 +212,11 @@
             'd.admx.baixing.com',
             'tr.mjoys.com/tanxopen',
             'click.tanx.com/cc',
-            'material.istreamsche.com'
+            'material.istreamsche.com',
+            'p0.ssl.qhimg.com'
     ],
    
-    // # 过滤域名, 针对_adDomains配置中的广告域名过滤, 可以让指定站点忽略检索指定的广告域名
+    // # 当前本站过滤URL, 针对_adDomains配置中的广告域名过滤, 可以让指定站点忽略检索指定的广告域名
     // 规则数据格式: key-站点域名,value-该站点域名下不屏蔽的广告地址,url必须与域名列表中的一致才能被过滤(包括大小写也要一样)
     _filterDomains = {
             // 百度
@@ -235,7 +254,7 @@
                 // 把数组最后一个覆盖j索引位置, 并让数组长度减1
                 _adDomains[ j-- ] = _adDomains[ _adDomains.length - 1 ];
                 _adDomains.length -= 1;
-                window.console && console.log( '过滤:' + _currDomain + ' 域名下的:' + adDomain );
+                testLog( '过滤:' + _currDomain + ' 域名下的:' + adDomain );
             }
         }
 
@@ -251,8 +270,7 @@
                         // 把数组最后一个覆盖j索引位置, 并让数组长度减1
                         _adDomains[ j-- ] = _adDomains[ _adDomains.length - 1 ];
                         _adDomains.length -= 1;
-                        
-                        window.console && console.log( '过滤:' + _currDomain + ' 域名下的:' + fd );
+                        testLog( '过滤:' + _currDomain + ' 域名下的:' + fd );
                     }
                 }
             }
@@ -273,45 +291,57 @@
         findAll( document.body, findDepth );
     }
     
-    // 递归查询dom,可指定检索深度
+    // 递归查询dom,可指定检索深度, 可指定查找完毕后的回调
     function findAll( dom, depth ) {
-        if ( depth <= 0 || !dom || dom.nodeType != 1 )
+        if ( depth <= 0 || !dom || dom.nodeType != 1 ) {
             return;
+        }
         
         for ( var i = 0, l = dom.childNodes.length; i < l; i++ ) {
             var elem = dom.childNodes[ i ];
             
             // 是否已被检索出是广告容器, 且已被清理, 则不处理
-            if ( elem.nodeType != 1 || '1' == elem.getAttribute( _clearProperty ) )
+            if ( elem.nodeType != 1 || null != elem.getAttribute( _clearProperty ) )
                 continue;
             
-            // 排除自己的广告(含有_YWF_,或含有_YWF_ADBOX的样式名) 
-            if ( !(elem._YWF_ || /\b_YWF_ADBOX\b/i.test( elem.className )) ) {
+            // 若未在忽略名单中,则继续检查
+            if ( !_ignoreTagNamesReg.test( elem.tagName ) && !_ignoreClassNamesReg.test( elem.className ) ) {
 
                 var finded = false;
                 
-                // 域名检测
-                if ( _tagNamesReg_url.test( elem.nodeName ) && checkAdDomain( elem ) ) {
+                // 域名URL规则检测
+                if ( /* 需要检测backgroundImage, 此处不再限定标签名 _tagNamesReg_url.test( elem.nodeName ) && */ checkAdDomain( elem ) ) {
                     _findDomainRuleCount++; // 符合域名规则的统计数量+1
                     finded = true;
                 }
                 
-                // 定位检测, 若使用了定位, 且属于指定的标签
-                else if ( usePosition( elem ) > 0 && _tagNamesReg_pos.test( elem.nodeName ) && (checkBoxRule( elem ) || checkAttrRule( elem )) ) {
+                // BOX规则检测
+                else if ( _tagNamesReg_box.test( elem.nodeName ) && checkBoxRule( elem ) ) {
                     _findBoxRuleCount++; // 符合规则的统计数量+1
                     finded = true;
                 }
-                
-                // 属性检测
-                else if ( usePosition( elem ) == 0 && checkAttrRule( elem ) ) {
+                // 属性规则检测
+                else if ( checkAttrRule( elem ) ) {
                     _findAttrRuleCount++; // 符合规则的统计数量+1
                     finded = true;
                 }
+                /*
+                // 定位BOX规则检测, 若使用了定位, 且属于指定的标签
+                else if ( _tagNamesReg_box.test( elem.nodeName ) && (pos = usePosition( elem )) > 0 && ((ckbox = checkBoxRule( elem )) || checkAttrRule( elem )) ) {
+                    ckbox ? _findBoxRuleCount++ : _findAttrRuleCount++; // 符合规则的统计数量+1
+                    finded = true;
+                }
+                
+                // 属性规则检测, 对pos判别0是为了互斥前一个if语句的checkAttrRule()调用, 避免重复调用
+                else if ( (pos == null ? usePosition( elem ) : pos) === 0 && checkAttrRule( elem ) ) {
+                    _findAttrRuleCount++; // 符合规则的统计数量+1
+                    finded = true;
+                }*/
                 
                 // 未找到, 检索下一级
-                else
+                else {
                     findAll( elem, depth - 1 );
-                
+                }
             }
         }
     }
@@ -425,29 +455,38 @@
             w : Math.max( body.scrollWidth, body.clientWidth, html.scrollWidth, html.scrollWidth ),
             h : Math.max( body.scrollHeight, body.clientHeight, html.scrollHeight, html.clientHeight )
         };
-    };
+    }
     
+    var
+    boxRulesCheckCountMap = {},      // 记录单个box检索次数
+    boxRulesHitCountMap   = {};      // 记录单个box命中次数
     // Box检测 - 检测可疑的广告元素是否匹配规则, 匹配的列入确定广告元素列表
     function checkBoxRule( sAdElem ) {
         for ( var i = 0; i < _boxRules.length; i++ ) {
-            var rule = _boxRules[ i ];
+            var rule = _boxRules[ i ], ruleKey = '_box_rules_' + i;
             
             switch ( rule.type ) {
             // css 规则
             case 'css' :
+                
+                // 记录检索次数
+                if ( boxRulesCheckCountMap[ ruleKey ] == null )
+                    boxRulesCheckCountMap[ ruleKey ] = 0;
+                boxRulesCheckCountMap[ ruleKey ]++;
+                
                 var isAd = false, flg = true;
                 for ( var s in rule ) {
                     if ( !flg ) break;
-                    if ( s && !/^(?:type|position)$/.test( s ) && rule.hasOwnProperty( s ) ) {
+                    if ( s && !/^type|position|positionReg$/.test( s ) && rule.hasOwnProperty( s ) ) {
+                        
                         // 若规则中要求有定位样式, 则必须符合定位样式
-                        if ( rule.positionReg && !rule.positionReg.test( currCss( sAdElem, 'position' ) ) ) {
-                            isAd = false;
-                            flg = false;
-                            break;
-                        } else if ( rule.position && rule.position != currCss( sAdElem, 'position' ) ) {
-                            isAd = false;
-                            flg = false;
-                            break;
+                        if ( rule.positionReg || rule.position ) {
+                            var pos = currCss( sAdElem, 'position' );
+                            if ( rule.positionReg && !rule.positionReg.test( pos ) || rule.position && rule.position != pos ) {
+                                isAd = false;
+                                flg = false;
+                                break;
+                            }
                         }
                         
                         var style = currCss( sAdElem, s );
@@ -486,12 +525,20 @@
                         }
                     }
                 }
+                
                 // 符合规则
                 if ( isAd && pushAdElems( sAdElem ) ) {
                     // 设置所匹配的规则下标,便于排查
                     sAdElem.setAttribute( '_box_rules_', i );
+                    
+                    // 记录命中次数
+                    if ( boxRulesHitCountMap[ ruleKey ] == null )
+                        boxRulesHitCountMap[ ruleKey ] = 0;
+                    boxRulesHitCountMap[ ruleKey ]++;
+                    
                     return true;
                 }
+                
                 break;
             }
         }
@@ -499,16 +546,25 @@
         return false;
     }
     
+    var
+    attrRulesCheckCountMap = {},      // 记录单个属性检索次数
+    attrRulesHitCountMap   = {};      // 记录单个属性命中次数
     // 属性检测 - 检测可疑的广告元素是否匹配规则, 匹配的列入确定广告元素列表
     function checkAttrRule( sAdElem ) {
         for ( var i = 0; i < _attrRules.length; i++ ) {
-            var rule = _attrRules[ i ];
+            var rule = _attrRules[ i ], ruleKey = '_attr_rules_' + i;
             
             switch ( rule.type ) {
             case 'attr'         : case 'attr='  :
             case 'attrContain'  : case 'attr~=' :
             case 'attrPrefix'   : case 'attr^=' :
             case 'attrSuffix'   : case 'attr$=' :
+                
+                // 记录检索次数
+                if ( attrRulesCheckCountMap[ ruleKey ] == null )
+                    attrRulesCheckCountMap[ ruleKey ] = 0;
+                attrRulesCheckCountMap[ ruleKey ]++;
+                
                 for ( var s in rule ) {
                     if ( s && !/^(?:type|useMd5)$/.test( s ) && rule.hasOwnProperty( s ) ) {
                         var attr = sAdElem.getAttribute( s );
@@ -531,22 +587,15 @@
                             
                             // 符合规则
                             _adElems.push( sAdElem );
+                            
+                            // 记录命中次数
+                            if ( attrRulesHitCountMap[ ruleKey ] == null )
+                                attrRulesHitCountMap[ ruleKey ] = 0;
+                            attrRulesHitCountMap[ ruleKey ]++;
+                            
                             return true;
                         default : break;
                         }
-                        
-                        /*if ( (/^(?:attr|attr=)$/.test( rule.type )         && attr == ruleValue) ||
-                             (/^(?:attrContain|attr~=)$/.test( rule.type ) && attr.indexOf( ruleValue ) >= 0) ||
-                             (/^(?:attrPrefix|attr\^=)$/.test( rule.type ) && attr.indexOf( ruleValue ) == 0) ||
-                             (/^(?:attrSuffix|attr\$=)$/.test( rule.type ) && attr.length - attr.lastIndexOf( ruleValue ) == ruleValue.length) ) {
-                            
-                            // 设置所匹配的规则下标,便于排查
-                            sAdElem.setAttribute( '_attr_rules_', i );
-                            
-                            // 符合规则
-                            _adElems.push( sAdElem );
-                            return true;
-                        }*/
                     }
                 }
                 break;
@@ -581,21 +630,47 @@
         return false;
     }
     
+    var
+    domainRulesCheckCountMap = {},      // 记录单个域名检索次数
+    domainRulesHitCountMap   = {};      // 记录单个域名命中次数
     // 检测元素是否含有常见的广告域名链接, 并列入广告列表
     function checkAdDomain( sAdElem ) {
         for ( var i = 0; i < _adDomains.length; i++ ) {
             var domain = _adDomains[ i ];
+            
+            if ( domainRulesCheckCountMap[ domain ] == null)
+                domainRulesCheckCountMap[ domain ] = 0
+            domainRulesCheckCountMap[ domain ]++;
+            
             // 检测是否包含具有url类属性的元素,且url在匹配列表之内吗,则视为广告元素
             if ( doCheckAdDomain( sAdElem, domain.toLowerCase() ) ) {
-                
                 sAdElem.setAttribute( '_domain_rules_', domain );
                 _adElems.push( sAdElem );
                 
+                if ( domainRulesHitCountMap[ domain ] == null)
+                    domainRulesHitCountMap[ domain ] = 0
+                domainRulesHitCountMap[ domain ]++;
                 return true;
             }
         }
         return false;
     }
+    
+    // 从元素中获取background-image地址
+    function getBackgroundImageUrl( elem ) {
+        var url = currCss( elem, 'background-image' );
+        url = url ? url.match( /url\((["'])((?:https?:)?\/\/[\s\S]+)\1\)$/i ) : null;
+        url = url ? url[ 2 ] : null;
+        return url;
+    }
+    
+    var
+    tagACheckCount        = 0,    tagAHitCount        = 0,    // 检测a元素次数与命中次数
+    tagObjectCheckCount   = 0,    tagObjectHitCount   = 0,    // 检测object元素次数与命中次数
+    tagImgCheckCount      = 0,    tagImgHitCount      = 0,    // 检测img元素次数与命中次数
+    tagEmbedCheckCount    = 0,    tagEmbedHitCount    = 0,    // 检测embed元素次数与命中次数
+    bgImgCheckCount       = 0,    bgImgHitCount       = 0,    // 检测background-image次数与命中次数
+    bgImgIgnoreCheckCount = 0;                                // 跳过background-image检测次数
     
     // 检测元素属性中的url是否与广告域名匹配, 且当前站点域名与domain参数非同一域名(避免在a.b.c下屏蔽了a.b.c/x)
     function doCheckAdDomain( elem, domain ) {
@@ -604,9 +679,9 @@
         var ret = false, tmpDomain = '//' + domain;
         
         switch ( elem.nodeName.toLowerCase() ) {
-        // iframe需要更多的检测,如:同域下,对iframe内部页面检测
         case 'iframe' :
             try {
+                // iframe存在递归检测的情况,如:同域下,对iframe内部页面检测,统计计数在内部处理
                 ret = checkAdIframe( elem, domain );
             } catch ( e ) {
                 ret = false;
@@ -615,15 +690,36 @@
         case 'a' :
             var url = (elem.href + '').toLowerCase();
             ret = url.indexOf( tmpDomain ) > -1;
+            tagACheckCount++;
+            ret && tagAHitCount++;
             break;
         case 'object' :
             var url = (elem.data + '').toLowerCase();
             ret = url.indexOf( tmpDomain ) > -1;
+            tagObjectCheckCount++;
+            ret && tagObjectHitCount++;
             break;
         case 'img' :
+            var url = (elem.src + '').toLowerCase();
+            ret = url.indexOf( tmpDomain ) > -1;
+            tagImgCheckCount++;
+            ret && tagImgHitCount++;
+            break;
         case 'embed' :
             var url = (elem.src + '').toLowerCase();
             ret = url.indexOf( tmpDomain ) > -1;
+            tagEmbedCheckCount++;
+            ret && tagEmbedHitCount++;
+            break;
+        default :
+            // 若非以上元素,且元素具备一定尺寸大小50x50,则检测background-image是否来源于广告域名
+            if ( elem.offsetWidth >= _minBgImgWidth && elem.offsetHeight >= _minBgImgHeight ) {
+                var url = getBackgroundImageUrl( elem );
+                ret = url ? url.toLowerCase().indexOf( tmpDomain ) > -1 : false;
+                bgImgCheckCount++;
+                ret && bgImgHitCount++;
+            } else
+                bgImgIgnoreCheckCount++;
             break;
         }
         
@@ -631,37 +727,29 @@
     }
     
     // # 检测子页面域名是否是广告域名
-    var sss = 0,
-        domainCheckCount = {}, // 域名被检测次数
-        domainHitCount = {};   // 域名命中次数
-    function checkAdIframe( iframe, domain ) {
-        if ( !domainCheckCount[ domain ] )
-            domainCheckCount[ domain ] = 0;
+    var tagIframeCheckCount = 0,            // iframe检索域名次数
+        tagIframeHitCount = 0;              // iframe命中域名次数
         
-        domainCheckCount[ domain ]++;
-        sss++;
+    function checkAdIframe( iframe, domain ) {
+        tagIframeCheckCount++;
         
         var ret = false;
         try {
             url = (iframe.src + '').toLowerCase();
 
-//            console.log( iframe );
-//            console.log( 'url:' + url );
-//            console.log( 'domain:' + domain );
-//            console.log( 'currDomain:' + _currDomain );
+//            testLog( iframe );
+//            testLog( 'url:' + url );
+//            testLog( 'domain:' + domain );
+//            testLog( 'currDomain:' + _currDomain );
             
             ret = url.indexOf( '//' + domain ) > -1;
             
             // 记录命中次数
-            if ( ret ) {
-                if ( !domainHitCount[ domain ] )
-                    domainHitCount[ domain ] = 0;
-                domainHitCount[ domain ]++;
-            }
+            ret && tagIframeHitCount++;
 
-//            console.log( 'ret:' + ret );
-//            console.log( '子页面数量:' + iframe.contentWindow.length );
-//            console.log( 'checked:' + !!iframe[ '.ad.iframe.checked.' ] );
+//            testLog( 'ret:' + ret );
+//            testLog( '子页面数量:' + iframe.contentWindow.length );
+//            testLog( 'checked:' + !!iframe[ '.ad.iframe.checked.' ] );
             
             if ( !ret && !iframe[ '.ad.iframe.checked.' ] ) {
 
@@ -671,15 +759,11 @@
                     isSameDomain = !!iframe.contentWindow.location.href;
                 } catch ( _ ) {
                     isSameDomain = false;
-//                    console.log( _ );
-//                    console.log( iframe );
                 }
-
-//                console.log( 'isSameDomain:' + isSameDomain );
 
                 if ( isSameDomain ) {
                     var subIframes = iframe.contentWindow.document.getElementsByTagName( 'iframe' );
-//                    console.log( '---- each sub win ----' );
+                    // 遍历子iframe
                     for ( var i = 0; i < subIframes.length; i++ ) {
                         // 递归检测
                         if ( checkAdIframe( subIframes[ i ], domain ) ) {
@@ -691,10 +775,6 @@
                     // 没子页面或者没检测出来, 则再检测一次a元素
                     if ( !ret ) {
                         var aList = iframe.contentWindow.document.getElementsByTagName( 'a' );
-//                        if (iframe.id=='tanxssp-outer-iframemm_12581624_13592124_54378538') {
-//                            console.log( iframe );
-//                            console.log( aList );
-//                        }
                         for ( var i = 0; i < aList.length; i++ ) {
                             if ( doCheckAdDomain( aList[ i ], domain ) ) {
                                 ret = true;
@@ -710,7 +790,6 @@
             }
         } catch ( e ) {
             ret = false;
-//            console.log( e );
         } finally {
             iframe = null;
         }
@@ -773,15 +852,26 @@
             }
         }
         
-        // console.log('subCount:' + subCount);
-        
         // 超过1个元素, 则视为正常节点
         return isOuter || subCount > 0;
     }
     
+    // 兼容浏览器获取下一个兄弟元素
+    function getNextElementSibling( elem ) {
+        if ( elem.nextElementSibling ) {
+            return elem.nextElementSibling;
+        } else {
+            var node = elem.nextSibling;
+            while ( node && node.nodeType !== 1 ){
+                node = node.nextSibling;
+            }
+            return node && node.nodeType === 1 ? node : null;
+        }
+    }
+    
     // 清理广告, 根据情况选择不同的方式清理
     function clearAd( adElemWrap, clearType ) {
-        var success = true;
+        if ( !adElemWrap ) return false;
         
         // 自动处理,若使用了定位,则通过定位隐藏,否则直接移除
         if ( 'auto' == clearType ) {
@@ -789,8 +879,8 @@
             if ( usePosition( adElemWrap ) ) {
                 clearType = 'movehide';
             } else {
-                // 浮动样式的广告, 占位隐藏, 优先判别下一个元素是否具有浮动,此处:nextElementSibling不兼容浏览器,可再优化
-                var floatNone = /^none$/i.test( currCss( adElemWrap.nextElementSibling || adElemWrap, 'float' ) );
+                // 浮动样式的广告, 占位隐藏, 优先判别下一个元素是否具有浮动
+                var floatNone = /^none$/i.test( currCss( getNextElementSibling( adElemWrap ) || adElemWrap, 'float' ) );
                 clearType = floatNone ? 'hide' : 'invisible';
             }
         }
@@ -809,51 +899,42 @@
             adElemWrap.style.cssText += ';filter:alpha(opacity=0) !important;opacity:0 !important;display:none !important;height:0 !important;bottom:auto !important;top:-99999px !important;left:-99999px !important;z-index:-100 !important;pointer-events:none !important;';
             break;
         case 'remove' :
-            // 元素移除, 直接删除导致页面存在js报错问题
+            // 元素节点从文档中摘除, 若用innerHTML清理删除会导致页面存在js报错问题
             adElemWrap.parentNode &&
             adElemWrap.parentNode.removeChild &&
             adElemWrap.parentNode.removeChild( adElemWrap );
             break;
-        default : success = false; break;
         }
         
         // 打上标识, 避免重复被清理而耗损性能
-        adElemWrap.setAttribute( _clearProperty, success ? '1' : '0' );
+        adElemWrap.setAttribute( _clearProperty, clearType );
         
-        return success;
+        return true;
     }
+    
+    // 日志输出
+    function log() {
+        if ( window.console ) {
+            console.log.apply( console, arguments );
+        }
+    }
+    function testLog() {
+        window._showADClearLog && log.apply( log, arguments );
+    }
+    
     
     // 主入口
     function main( findDepth ) {
         if ( window.top != window )
             return;
         
-        // # 去掉过滤出的广告域名, 从过滤列表中取得当前域名下需要过滤的域名
-        var fds = _filterDomains[ _currDomain ];
-        if ( fds ) {
-            for ( var i = 0; i < fds.length; i++ ) {
-                // 需要过滤的域名
-                var fd = fds[ i ].toLowerCase();
-                
-                for ( var j = 0; j < _adDomains.length; j++ ) {
-                    if ( fd == _adDomains[ j ].toLowerCase() ) {
-                        // 把数组最后一个覆盖j索引位置, 并让数组长度减1
-                        _adDomains[ j-- ] = _adDomains[ _adDomains.length - 1 ];
-                        _adDomains.length -= 1;
-                    }
-                }
-            }
-        }
-        
-        // 过滤出所有的广告元素,findDepth缺省检索深度20层
+        // 过滤出所有的广告元素,findDepth缺省检索深度20层, 并在查找到确切的广告元素后执行回调进行清理
         findSuspiciousAdElem( findDepth );
         
         // 从已确认的广告列表中, 清理广告元素
         var clearProportion = 100; // 清理比例10%, 则表示仅仅删除10%的广告, 其他保留, 缺省为100%;
         for ( var i = 0, len = Math.round( _adElems.length * clearProportion / 100 ); i < len; i++ ) {
-            var elem = _adElems[ i ];
-            var adElemWrap = findOuterAdWrap( elem );
-            adElemWrap && clearAd( adElemWrap, 'auto' ) && testLogClearAdCount++;
+            clearAd( findOuterAdWrap( _adElems[ i ] ), _clearType ) && testLogClearAdCount++;
         }
         
         // # test log
@@ -879,14 +960,16 @@
         testLogClearAdCount = 0, testLogClearCount = 0, testLogUseTime = 0;
     
     // 每500毫秒清理一次, 持续清理10秒
-    var speedTime = 500, maxTime = 10 * 1000 + speedTime,
+    var speedTime = 500, maxTime = 1 * 6 * 10 * 1000 + speedTime,
         startTime = new Date().getTime();
     
     // 无阻塞方式渲执行清理 
     setTimeout( function() {
         testLogClearCount++;
         if ( testLogClearCount == 1 )
-            window.console && console.log( '[广告清理 v' + _version + '] - 正在清理广告...' );
+            log( '[广告清理 v' + _version + '] - 正在清理广告...' );
+        
+        log( '[广告清理 v' + _version + '] - 正在清理广告...' + testLogClearCount );
         
         // 调用主入口函数,默认检索深度为20层
         var t = new Date().getTime();
@@ -900,30 +983,90 @@
         
         // # TEST LOG
         else if ( window.console ) {
-            window._showADClearLog && console.log( testLogAdElems );
-            testLogTxt && console.log.apply( console, [ testLogTxt ].concat( testLogTxtColor ) );
-            console.log( '[广告清理 v' + _version + '] - 清理完毕，共清理广告 ' + testLogClearCount + ' 次，总耗时：' + testLogUseTime + 'ms，单次平均耗时：' + (testLogUseTime / testLogClearCount >> 0) + 'ms' );
+            testLog( testLogAdElems );
+            testLogTxt && log.apply( log, [ testLogTxt ].concat( testLogTxtColor ) );
+            log( '[广告清理 v' + _version + '] - 清理完毕，共清理广告 ' + testLogClearCount + ' 次，总耗时：' + testLogUseTime + 'ms，单次平均耗时：' + (testLogUseTime / testLogClearCount >> 0) + 'ms' );
             
-            var cc = 0;
-            for ( var k in domainCheckCount ) {
-                if ( k && domainCheckCount.hasOwnProperty( k ) ) {
-                    cc++;
-                    window._showADClearLog && console.log( k + '检索次数:' + domainCheckCount[ k ] );
+            // #### 域名规则日志
+            testLog( '[域名规则日志] -----' );
+            
+            var domainRulesCheckTotalCount = 0;
+            for ( var k in domainRulesCheckCountMap ) {
+                if ( k && domainRulesCheckCountMap.hasOwnProperty( k ) ) {
+                    domainRulesCheckTotalCount += domainRulesCheckCountMap[ k ];
+                    testLog( '%c域名规则 - 检索次数：' + domainRulesCheckCountMap[ k ] + '\t- ' + k, 'color:gray' );
                 }
             }
             
-            var c = 0;
-            for ( var k in domainHitCount ) {
-                if ( k && domainHitCount.hasOwnProperty( k ) ) {
-                    c++;
-                    window._showADClearLog && console.log( k + '命中次数:' + domainHitCount[ k ] );
+            var domainRulesHitDomainCount = 0; domainRulesHitTotalCount = 0;
+            for ( var k in domainRulesHitCountMap ) {
+                if ( k && domainRulesHitCountMap.hasOwnProperty( k ) ) {
+                    domainRulesHitDomainCount++;
+                    domainRulesHitTotalCount += domainRulesHitCountMap[ k ];
+                    testLog( '%c域名规则 - 命中次数：' + domainRulesHitCountMap[ k ] + '\t- ' + k, 'color:red' );
                 }
             }
             
-            window._showADClearLog && console.log( '总广告域名:' + _adDomains.length + '个, 被检索的广告域名:' + cc + '个, 命中广告域名:' + c + '个' );
-            window._showADClearLog && console.log( 'checkAdIframe执行次数:' + sss );
+            testLog( 'a     \t命中次数：' + tagAHitCount      + '\t检索次数：' + tagACheckCount );
+            testLog( 'bg-img\t命中次数：' + bgImgHitCount     + '\t检索次数：' + bgImgCheckCount );
+            testLog( 'img   \t命中次数：' + tagImgHitCount    + '\t检索次数：' + tagImgCheckCount );
+            testLog( 'iframe\t命中次数：' + tagIframeHitCount + '\t检索次数：' + tagIframeCheckCount );
+            testLog( 'object\t命中次数：' + tagObjectHitCount + '\t检索次数：' + tagObjectCheckCount );
+            testLog( 'embed \t命中次数：' + tagEmbedHitCount  + '\t检索次数：' + tagEmbedCheckCount );
+            testLog( 'bg-img\t忽略检索次数：' + bgImgIgnoreCheckCount );
+            testLog( '总广告域名：' + _adDomains.length + '个，域名规则检索次数：' 
+                    + domainRulesCheckTotalCount + '，命中次数：' + domainRulesHitTotalCount + '，命中域名个数：' + domainRulesHitDomainCount );
+            
+            
+            // #### box规则日志
+            testLog( '[box规则日志] -----' );
+            
+            var boxRulesCheckTotalCount = 0;
+            for ( var k in boxRulesCheckCountMap ) {
+                if ( k && boxRulesCheckCountMap.hasOwnProperty( k ) ) {
+                    boxRulesCheckTotalCount += boxRulesCheckCountMap[ k ];
+                    testLog( '%cbox规则 - 检索次数：' + boxRulesCheckCountMap[ k ] + '\t- ' + k, 'color:gray' );
+                }
+            }
+            
+            var boxRulesHitCount = 0; boxRulesHitTotalCount = 0;
+            for ( var k in boxRulesHitCountMap ) {
+                if ( k && boxRulesHitCountMap.hasOwnProperty( k ) ) {
+                    boxRulesHitCount++;
+                    boxRulesHitTotalCount += boxRulesHitCountMap[ k ];
+                    testLog( '%cbox规则 - 命中次数：' + boxRulesHitCountMap[ k ] + '\t- ' + k, 'color:red' );
+                }
+            }
+            
+            testLog( '总box规则：' + _boxRules.length + '个，box规则检索次数：' 
+                    + boxRulesCheckTotalCount + '，命中次数：' + boxRulesHitTotalCount + '，命中域名个数：' + boxRulesHitCount );
+            
+         
+            // #### box规则日志
+            testLog( '[attr规则日志] -----' );
+            
+            var attrRulesCheckTotalCount = 0;
+            for ( var k in attrRulesCheckCountMap ) {
+                if ( k && attrRulesCheckCountMap.hasOwnProperty( k ) ) {
+                    attrRulesCheckTotalCount += attrRulesCheckCountMap[ k ];
+                    testLog( '%cattr规则 - 检索次数：' + attrRulesCheckCountMap[ k ] + '\t- ' + k, 'color:gray' );
+                }
+            }
+            
+            var attrRulesHitCount = 0; attrRulesHitTotalCount = 0;
+            for ( var k in attrRulesHitCountMap ) {
+                if ( k && attrRulesHitCountMap.hasOwnProperty( k ) ) {
+                    attrRulesHitCount++;
+                    attrRulesHitTotalCount += attrRulesHitCountMap[ k ];
+                    testLog( '%cattr规则 - 命中次数：' + attrRulesHitCountMap[ k ] + '\t- ' + k, 'color:red' );
+                }
+            }
+            
+            testLog( '总attr规则：' + _boxRules.length + '个，attr规则检索次数：' 
+                    + attrRulesCheckTotalCount + '，命中次数：' + attrRulesHitTotalCount + '，命中域名个数：' + attrRulesHitCount );
         }
-    }, 0 );
+    
+    }, 10 );
     
     
     // ####### 嵌入一个md5计算函数
