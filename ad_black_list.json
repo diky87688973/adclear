@@ -1,0 +1,121 @@
+/*!
+ * 提供给Browser AdClear Plugin使用的外链广告域名黑名单
+ */
+{
+    // 广告域名黑名单
+    "blackList" : [
+        // 百度
+        'pos.baidu.com',
+        'static.pay.baidu.com/baichuan/adp',
+        'entry.baidu.com/rp/home',
+        'ubmcmm.baidustatic.com/media/v1',
+        'www.baidu.com/cb.php',
+        
+        // 百度贴吧嵌入式广告
+        'www.baidu.com/baidu.php?url=',
+        
+        // bilibili
+        'cm.bilibili.com/cm/api/fees/pc',
+        
+        // 360搜索
+        'api.so.lianmeng.360.cn/searchthrow/api/ads/throw',
+
+        // 爱搜网
+        'nads.wuaiso.com',
+        
+        // 阿里
+        'a1.alicdn.com/creation',
+        'afptrack.alimama.com/clk',
+        'afp.alicdn.com/afp-creative',
+        'click.aliyun.com/m',
+        'click.tanx.com/ct',
+        's.click.taobao.com/t',
+        'render.alipay.com/p/s/taobaonpm_click',
+        
+        // 网易
+        'img1.126.net/channel',
+        'img1.126.net/advertisement/contract',
+        'popme.163.com',
+        'g.163.com/r',
+        
+        'strip.taobaocdn.com',                  // 淘宝
+        'inte.sogou.com/ct',                    // 搜狗
+        'x.jd.com/exsites',                     // 京东
+        'g.fastapi.net/qa',                     // 互众
+        'c.l.qq.com/lclick',                    // 腾讯
+        'd1.sina.com.cn/litong/zhitou/sinaads', // 新浪
+        'saxn.sina.com.cn/dsp/click',
+        'saxn.sina.com.cn/mfp/click',
+        'ads.vamaker.com',                      // 万流客
+        'same.chinadaily.com.cn/s?',            // 中国日报网
+        'img-ads.csdn.net',                     // CSDN
+        's3m.mediav.com',                       // 聚效
+        
+        // google
+        'www.googleadservices.com',
+        'googleads.g.doubleclick.net/pagead',
+        'googleads.g.doubleclick.net/aclk',
+        'tpc.googlesyndication.com/safeframe',
+        
+        // 西部数码
+        'www.west.cn/services/CloudHost/?ads=',
+        // 火蓝
+        'www.nas.net.cn',
+        // 奇异互动
+        'www.7e.hk',
+        // 创速传媒网络
+        'www.37cs.com/html/click',
+        
+        // ifeng
+        'www.ifeng.com/a_if',
+        'www.ifeng.com/ssi-incs',
+        'y1.ifengimg.com',
+        'y2.ifengimg.com/mappa',
+        'c1.ifengimg.com',
+        'games.ifeng.com/bcs/games',
+        'games.ifeng.com/1403m',
+        'dol.deliver.ifeng.com/c',
+        
+        // 其他
+        'g.ggxt.net/qa',
+        'wa.gtimg.com',
+        'www.cokolo.cn',
+        'swa.gtimg.com/web/snswin',
+        'show.g.mediav.com/s',
+        'topic.cokolo.cn',
+        'd.admx.baixing.com',
+        'tr.mjoys.com/tanxopen',
+        'click.tanx.com/cc',
+        'material.istreamsche.com',
+        'p0.ssl.qhimg.com'
+    ],
+   
+    // # 当前本站过滤URL, 针对黑名单配置中的广告域名过滤, 可以让指定站点忽略检索指定的广告域名
+    // 规则数据格式: key-站点域名,value-该站点域名下不屏蔽的广告地址,url必须与域名列表中的一致才能被过滤(包括大小写也要一样)
+    "filterList" : {
+        // 百度
+        'www.baidu.com' : [
+             'pos.baidu.com',
+             'static.pay.baidu.com/baichuan/adp'
+        ],
+        
+        // 网易
+        'www.163.com' : [
+            //'img1.126.net/channel',
+            //'popme.163.com',
+            //'g.163.com/r'
+        ],
+        
+        // ifeng
+        'www.ifeng.com' : [
+            //'dol.deliver.ifeng.com/c',
+            'y1.ifengimg.com'
+            /*'www.ifeng.com/a_if',
+            'www.ifeng.com/ssi-incs',
+            'y1.ifengimg.com',
+            'c1.ifengimg.com',
+            'games.ifeng.com/bcs/games',
+            'games.ifeng.com/1403m'*/
+        ]
+    }
+}
