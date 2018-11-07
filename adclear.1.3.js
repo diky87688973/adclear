@@ -5,19 +5,18 @@
  * Includes jQuery MD5 Plugin 1.2.1
  * https://github.com/blueimp/jQuery-MD5
  * 
- * Date: 2018-10-11T11:07:42.680Z
+ * Date: 2018-11-07T13:21:18.758Z
  */
 /*
     安装：
     http://adclear.fanjs.net
     
     浏览器标签：
-    javascript:(function(){var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/master/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading Adclear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
+    javascript:(function(){_showADClearLog=true;var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/master/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading Adclear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
     
     显示细节日志：
     _showADClearLog = true; // 增加全局配置参数可输出更多日志
  */
-_showADClearLog = true;
 ( function() {
     
     var
@@ -41,7 +40,10 @@ _showADClearLog = true;
     
     // 符合background-image广告检测的元素, 以最小尺寸判别, 小于该尺寸不检查
     _minBgImgWidth  = 50,
-    _minBgImgHeight = 50;
+    _minBgImgHeight = 50,
+    
+    // 广告黑名单
+    _blackListUrl   = '//raw.githubusercontent.com/diky87688973/adclear/master/ad_black_list.json',
 
     // 记录查到的数量, 仅用于输出调试
     _findBoxRuleCount    = 0,
@@ -133,121 +135,28 @@ _showADClearLog = true;
     } ],
     
     // # URL匹配规则, 广告域名, 适用于内容嵌入广告
-    _adDomains = [
-            // 百度
-            'pos.baidu.com',
-            'static.pay.baidu.com/baichuan/adp',
-            'entry.baidu.com/rp/home',
-            'ubmcmm.baidustatic.com/media/v1',
-            'www.baidu.com/cb.php',
-            
-            // 百度贴吧嵌入式广告
-            'www.baidu.com/baidu.php?url=',
-            
-            // bilibili
-            'cm.bilibili.com/cm/api/fees/pc',
-            
-            // 360搜索
-            'api.so.lianmeng.360.cn/searchthrow/api/ads/throw',
-
-            // 爱搜网
-            'nads.wuaiso.com',
-            
-            // 阿里
-            'a1.alicdn.com/creation',
-            'afptrack.alimama.com/clk',
-            'afp.alicdn.com/afp-creative',
-            'click.aliyun.com/m',
-            'click.tanx.com/ct',
-            's.click.taobao.com/t',
-            'render.alipay.com/p/s/taobaonpm_click',
-            
-            // 网易
-            'img1.126.net/channel',
-            'img1.126.net/advertisement/contract',
-            'popme.163.com',
-            'g.163.com/r',
-            
-            'strip.taobaocdn.com',                  // 淘宝
-            'inte.sogou.com/ct',                    // 搜狗
-            'x.jd.com/exsites',                     // 京东
-            'g.fastapi.net/qa',                     // 互众
-            'c.l.qq.com/lclick',                    // 腾讯
-            'd1.sina.com.cn/litong/zhitou/sinaads', // 新浪
-            'saxn.sina.com.cn/dsp/click',
-            'saxn.sina.com.cn/mfp/click',
-            'ads.vamaker.com',                      // 万流客
-            'same.chinadaily.com.cn/s?',            // 中国日报网
-            'img-ads.csdn.net',                     // CSDN
-            's3m.mediav.com',                       // 聚效
-            
-            // google
-            'www.googleadservices.com',
-            'googleads.g.doubleclick.net/pagead',
-            'googleads.g.doubleclick.net/aclk',
-            'tpc.googlesyndication.com/safeframe',
-            
-            // 西部数码
-            'www.west.cn/services/CloudHost/?ads=',
-            // 火蓝
-            'www.nas.net.cn',
-            // 奇异互动
-            'www.7e.hk',
-            // 创速传媒网络
-            'www.37cs.com/html/click',
-            
-            // ifeng
-            'www.ifeng.com/a_if',
-            'www.ifeng.com/ssi-incs',
-            'y1.ifengimg.com',
-            'y2.ifengimg.com/mappa',
-            'c1.ifengimg.com',
-            'games.ifeng.com/bcs/games',
-            'games.ifeng.com/1403m',
-            'dol.deliver.ifeng.com/c',
-            
-            // 其他
-            'g.ggxt.net/qa',
-            'wa.gtimg.com',
-            'www.cokolo.cn',
-            'swa.gtimg.com/web/snswin',
-            'show.g.mediav.com/s',
-            'topic.cokolo.cn',
-            'd.admx.baixing.com',
-            'tr.mjoys.com/tanxopen',
-            'click.tanx.com/cc',
-            'material.istreamsche.com',
-            'p0.ssl.qhimg.com'
-    ],
+    _adDomains = [],
    
     // # 当前本站过滤URL, 针对_adDomains配置中的广告域名过滤, 可以让指定站点忽略检索指定的广告域名
-    // 规则数据格式: key-站点域名,value-该站点域名下不屏蔽的广告地址,url必须与域名列表中的一致才能被过滤(包括大小写也要一样)
-    _filterDomains = {
-            // 百度
-            'www.baidu.com' : [
-                // 'pos.baidu.com',
-                // 'static.pay.baidu.com/baichuan/adp'
-            ],
-            
-            // 网易
-            'www.163.com' : [
-                //'img1.126.net/channel',
-                //'popme.163.com',
-                //'g.163.com/r'
-            ],
-            
-            // ifeng
-            'www.ifeng.com' : [
-                //'dol.deliver.ifeng.com/c',
-                'y1.ifengimg.com'
-                /*'www.ifeng.com/a_if',
-                'www.ifeng.com/ssi-incs',
-                'y1.ifengimg.com',
-                'c1.ifengimg.com',
-                'games.ifeng.com/bcs/games',
-                'games.ifeng.com/1403m'*/
-            ]
-    };
+    // 规则数据格式: key-站点域名,value-该站点域名下不屏蔽的广告地址数组,url必须与域名列表中的一致才能被过滤(包括大小写也要一样)
+    _filterDomains = {};
+    
+    // # 同步去获取与插件相同位置的广告黑名单
+    ( function(){
+        var t = new Date().getTime(),
+            xhr = new XMLHttpRequest(),
+            loadOver = function () {
+                if( xhr.readyState == 4 && (xhr.status >= 200 && xhr.status < 300 || xhr.status ===304 || xhr.status ===0 || xhr.status === 1223) ){
+                    testLog( 'Loading AD Black List \tused ' + (new Date().getTime() - t) + 'ms' );
+                    var data = eval( '(' + xhr.responseText + '\n)' );
+                    _adDomains = _adDomains.concat( data.blackList || [] );
+                    _filterDomains = data.filterList || _filterDomains;
+                }
+            };
+        xhr.open( 'GET', _blackListUrl, false );
+        xhr.send( null );
+        loadOver();
+    } )();
     
     // # 去掉过滤出的广告域名, 从过滤列表中取得当前域名下需要过滤的域名
     ( function() {
@@ -268,7 +177,6 @@ _showADClearLog = true;
             for ( var i = 0; i < fds.length; i++ ) {
                 // 需要过滤的域名
                 var fd = fds[ i ].toLowerCase();
-                
                 for ( var j = 0; j < _adDomains.length; j++ ) {
                     if ( fd == _adDomains[ j ].toLowerCase() ) {
                         // 把数组最后一个覆盖j索引位置, 并让数组长度减1
@@ -970,10 +878,10 @@ _showADClearLog = true;
     // 无阻塞方式渲执行清理 
     setTimeout( function() {
         testLogClearCount++;
-        if ( testLogClearCount == 1 )
-            log( '[广告清理 v' + _version + '] - 正在清理广告...' );
+//        if ( testLogClearCount == 1 )
+//            log( '[广告清理 v' + _version + '] - 正在清理广告...' );
         
-        log( '[广告清理 v' + _version + '] - 正在清理广告...' + testLogClearCount );
+        log( '[广告清理 v' + _version + '] - 正在清理广告... ' + testLogClearCount + ' 次' );
         
         // 调用主入口函数,默认检索深度为20层
         var t = new Date().getTime();
