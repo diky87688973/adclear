@@ -100,8 +100,8 @@
     "filterList" : {
         // 百度
         'www.baidu.com' : [
-             'pos.baidu.com',
-             'static.pay.baidu.com/baichuan/adp'
+             //'pos.baidu.com',
+             //'static.pay.baidu.com/baichuan/adp'
         ],
         
         // 网易
