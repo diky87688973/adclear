@@ -12,8 +12,7 @@
     http://adclear.fanjs.net
     
     浏览器标签：
-    javascript:(function(){_showADClearLog=true;var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/master/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window.console&&console.log('Loading Adclear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
-    
+    javascript:(function(){_showADClearLog=true;var t=new Date().getTime(),a=new XMLHttpRequest();a.open('GET','//raw.githubusercontent.com/diky87688973/adclear/master/adclear.1.3.js',true);a.onreadystatechange=function(){if(this.readyState==4&&(this.status>=200&&this.status<300||this.status===304||this.status===0||this.status===1223)){window._showADClearLog&&window.console&&console.log('Loading Adclear Plugin...\tused '+(new Date().getTime()-t)+'ms');eval(this.responseText);}};a.send(null);})();
     显示细节日志：
     _showADClearLog = true; // 增加全局配置参数可输出更多日志
  */
@@ -728,7 +727,7 @@
         else if ( /^body|html$/i.test( wrap.nodeName ) )
             return true;
         
-        var isOuter = false, subCount = 0;
+        var isOuter = false, subCount = 0, subLiCount = 0;
         
         for ( var i = 0, l = wrap.children.length; i < l; i++ ) {
             var elem = wrap.children[ i ];
@@ -746,9 +745,14 @@
             var mWidth = 50, mHeight = 30;
             
             var isHide = elem.offsetWidth < mWidth || elem.offsetHeight < mHeight || 'hidden' == currCss( elem, 'visibility' );
-            if ( !isHide )
+            if ( !isHide ) {
                 // 记录可见的兄弟节点个数
                 subCount++;
+            }
+            
+            // 记录li兄弟节点,容错处理,避免清理了悬浮菜单,悬浮菜单最小尺寸30x30
+            if ( /^li$/i.test( elem.nodeName ) && elem.offsetWidth > 30 && elem.offsetHeight > 30 )
+                subLiCount++;
             
             // 判别广告包装层的最外层元素
             if (
@@ -758,6 +762,8 @@
                         || !(elem.children.length <= 1 && /^img$/i.test( elem.children[ 0 ].nodeName ) && (elem.children[ 0 ].offsetWidth < mWidth && elem.children[ 0 ].offsetHeight < mHeight))))
                 // 任意元素,隐藏状态,但父元素具备tab关键字
                 || (isHide && (/(?:^|[-_\s])tab(?:[-_\s]|$)/i.test( wrap.id + ' ' + wrap.className )))
+                // 兄弟li节点超过3个,可能是个li菜单,不再向上查找父级
+                || subLiCount > 3
                 ) {
                 isOuter = true;
                 break;
