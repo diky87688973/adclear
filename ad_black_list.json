@@ -39,6 +39,11 @@
         'popme.163.com',
         'g.163.com/r',
         
+        // csdn
+        'img-ads.csdn.net',
+        'edu.csdn.net/topic/ai30?utm_source=',
+        'nbrecsys.4paradigm.com/api/v0/csdn',
+        
         'strip.taobaocdn.com',                  // 淘宝
         'inte.sogou.com/ct',                    // 搜狗
         'x.jd.com/exsites',                     // 京东
@@ -49,7 +54,6 @@
         'saxn.sina.com.cn/mfp/click',
         'ads.vamaker.com',                      // 万流客
         'same.chinadaily.com.cn/s?',            // 中国日报网
-        'img-ads.csdn.net',                     // CSDN
         's3m.mediav.com',                       // 聚效
         
         // google
@@ -78,7 +82,6 @@
         'dol.deliver.ifeng.com/c',
         
         // 其他
-        'nbrecsys.4paradigm.com/api/v0/csdn',
         'rabc2.iteye.com/xk',
         'g.ggxt.net/qa',
         'wa.gtimg.com',
