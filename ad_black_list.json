@@ -50,8 +50,7 @@
         'g.fastapi.net/qa',                     // 互众
         'c.l.qq.com/lclick',                    // 腾讯
         'd1.sina.com.cn/litong/zhitou/sinaads', // 新浪
-        'saxn.sina.com.cn/dsp/click',
-        'saxn.sina.com.cn/mfp/click',
+        'saxn.sina.com.cn/*/click',
         'ads.vamaker.com',                      // 万流客
         'same.chinadaily.com.cn/s?',            // 中国日报网
         's3m.mediav.com',                       // 聚效
@@ -82,6 +81,7 @@
         'dol.deliver.ifeng.com/c',
         
         // 其他
+        '643108e7617ef.cdn.sohucs.com/*.jpg',
         'shop.zs516.com/adjrsh',
         'rabc2.iteye.com/xk',
         'g.ggxt.net/qa',
