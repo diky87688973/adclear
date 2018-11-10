@@ -147,7 +147,7 @@
         xhr.onreadystatechange = function () {
                 if( xhr.readyState == 4 && (xhr.status >= 200 && xhr.status < 300 || xhr.status ===304 || xhr.status ===0 || xhr.status === 1223) ){
                     xhr.onreadystatechange = null;
-                    testLog( 'Loading AD Black List \tused ' + (new Date().getTime() - t) + 'ms' );
+                    testLog( 'Loading Adclear Black List \tused ' + (new Date().getTime() - t) + 'ms' );
                     var data = eval( '(' + xhr.responseText + '\n)' );
                     _adDomains = _adDomains.concat( data.blackList || [] );
                     _filterDomains = data.filterList || _filterDomains;
