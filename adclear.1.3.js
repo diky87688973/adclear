@@ -155,7 +155,7 @@
                     setTimeout( main, 10 ); // 载入黑名单完毕后执行主函数
                 }
             };
-        xhr.open( 'GET', _blackListUrl, false );
+        xhr.open( 'GET', _blackListUrl, true );
         xhr.send( null );
     } )();
     
