@@ -162,7 +162,7 @@
         // 当前域名正是广告域名,则忽视该广告域名
         for ( var j = 0; j < _adDomains.length; j++ ) {
             var adDomain = _adDomains[ j ];
-            if ( location.href.indexOf( '//' + adDomain.toLowerCase() ) > -1 ) {
+            if ( isAdDomain( location.href.toLowerCase(), '//' + adDomain.toLowerCase() ) ) {
                 // 把数组最后一个覆盖j索引位置, 并让数组长度减1
                 _adDomains[ j-- ] = _adDomains[ _adDomains.length - 1 ];
                 _adDomains.length -= 1;
@@ -259,6 +259,33 @@
     
     
     // # utils
+    
+    // # URL模式匹配, 检测elemUrl是不是属于adUrl域名下的广告url,支持adUrl通配符匹配
+    function isAdDomain( elemUrl, adUrl ) {
+        var es = elemUrl.split( '//' );
+        var as = adUrl.split( '//' );
+        if ( es[ 1 ] && as[ 1 ] ) {
+            es = es[ 1 ].split( /[?.:/]/ );
+            as = as[ 1 ].split( /[?.:/]/ );
+            try {
+                for ( var i = 0; i < as.length; i++ ) {
+                    if ( es[ i ] != as[ i ] && as[ i ] != '*' ) {
+                        // 模式适配: aa*cc*ee.*.com -> aabbccee.abc.com
+                        var reg = eval( '/^' + as[ i ].replace( /\*/g, '\.*' ) + '$/i' );
+                        if ( reg.test( es[ i ] ) ) {
+                            continue;
+                        }
+                        return false;
+                    }
+                }
+            } catch ( e ) {
+                testLog( e );
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
     
     // 定位检测 - 是否使用了绝对定位或固定定位,1-absolute,2-fixed,0-其他
     function usePosition( elem ) {
@@ -600,25 +627,25 @@
             break;
         case 'a' :
             var url = (elem.href + '').toLowerCase();
-            ret = url.indexOf( tmpDomain ) > -1;
+            ret = isAdDomain( url, tmpDomain );
             tagACheckCount++;
             ret && tagAHitCount++;
             break;
         case 'object' :
             var url = (elem.data + '').toLowerCase();
-            ret = url.indexOf( tmpDomain ) > -1;
+            ret = isAdDomain( url, tmpDomain );
             tagObjectCheckCount++;
             ret && tagObjectHitCount++;
             break;
         case 'img' :
             var url = (elem.src + '').toLowerCase();
-            ret = url.indexOf( tmpDomain ) > -1;
+            ret = isAdDomain( url, tmpDomain );
             tagImgCheckCount++;
             ret && tagImgHitCount++;
             break;
         case 'embed' :
             var url = (elem.src + '').toLowerCase();
-            ret = url.indexOf( tmpDomain ) > -1;
+            ret = isAdDomain( url, tmpDomain );
             tagEmbedCheckCount++;
             ret && tagEmbedHitCount++;
             break;
@@ -626,7 +653,7 @@
             // 若非以上元素,且元素具备一定尺寸大小50x50,则检测background-image是否来源于广告域名
             if ( elem.offsetWidth >= _minBgImgWidth && elem.offsetHeight >= _minBgImgHeight ) {
                 var url = getBackgroundImageUrl( elem );
-                ret = url ? url.toLowerCase().indexOf( tmpDomain ) > -1 : false;
+                ret = url ? isAdDomain( url.toLowerCase(), tmpDomain ) : false;
                 bgImgCheckCount++;
                 ret && bgImgHitCount++;
             } else
@@ -653,7 +680,7 @@
 //            testLog( 'domain:' + domain );
 //            testLog( 'currDomain:' + _currDomain );
             
-            ret = url.indexOf( '//' + domain ) > -1;
+            ret = isAdDomain( url, '//' + domain );
             
             // 记录命中次数
             ret && tagIframeHitCount++;
