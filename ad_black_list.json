@@ -82,6 +82,7 @@
         'dol.deliver.ifeng.com/c',
         
         // 其他
+        '*.cdn.sohucs.com',
         'rabc2.iteye.com/xk',
         'g.ggxt.net/qa',
         'wa.gtimg.com',
@@ -93,10 +94,7 @@
         'tr.mjoys.com/tanxopen',
         'click.tanx.com/cc',
         'material.istreamsche.com',
-        'p0.ssl.qhimg.com',
-        'p1.ssl.qhimg.com',
-        'p2.ssl.qhimg.com',
-        'p3.ssl.qhimg.com'
+        'p*.ssl.qhimg.com'
     ],
    
     // # 当前本站过滤URL, 针对黑名单配置中的广告域名过滤, 可以让指定站点忽略检索指定的广告域名
