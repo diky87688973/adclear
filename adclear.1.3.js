@@ -5,7 +5,7 @@
  * Includes jQuery MD5 Plugin 1.2.1
  * https://github.com/blueimp/jQuery-MD5
  * 
- * Date: 2018-11-07T13:21:18.758Z
+ * Date: 2018-11-10T07:34:02.724Z
  */
 /*
     安装：
@@ -264,25 +264,23 @@
     function isAdDomain( elemUrl, adUrl ) {
         var es = elemUrl.split( '//' );
         var as = adUrl.split( '//' );
-        if ( es[ 1 ] && as[ 1 ] ) {
-            es = es[ 1 ].split( /[?.:/]/ );
-            as = as[ 1 ].split( /[?.:/]/ );
-            try {
-                for ( var i = 0; i < as.length; i++ ) {
-                    if ( es[ i ] != as[ i ] && as[ i ] != '*' ) {
-                        // 模式适配: aa*cc*ee.*.com -> aabbccee.abc.com
-                        var reg = eval( '/^' + as[ i ].replace( /\*/g, '\.*' ) + '$/i' );
-                        if ( reg.test( es[ i ] ) ) {
-                            continue;
-                        }
-                        return false;
-                    }
-                }
-            } catch ( e ) {
-                testLog( e );
-                return false;
+        try {
+            if ( es[ 1 ] && as[ 1 ] ) {
+                
+                // 模式适配: 
+                // 'aa*cc*ee.b*du.co*/x*/*y/i*.ht*l?s=ww*
+                //  ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+                // /^aa.*cc.*ee\.b.*du\.co.*\/x.*\/.*y\/i.*\.ht.*l\?s=ww.*w/g
+                var regTxt = '/^' + as[ 1 ].replace( /([-(){}[\]\/?:+^$.])/g, '\\$1' ).replace( /[*]/g, '\.*' ) + '/i';
+                var reg = eval( regTxt );
+                
+                return reg.test( es[ 1 ] );
             }
-            return true;
+        } catch ( e ) {
+            log( e );
+            log( elemUrl );
+            log( adUrl );
+            log( regTxt );
         }
         return false;
     }
