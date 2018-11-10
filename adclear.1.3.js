@@ -155,7 +155,7 @@
                     setTimeout( main, 10 ); // 载入黑名单完毕后执行主函数
                 }
             };
-        xhr.open( 'GET', _blackListUrl, true );
+        xhr.open( 'GET', _blackListUrl, false );
         xhr.send( null );
     } )();
     
@@ -263,7 +263,11 @@
     // # utils
     
     // # URL模式匹配, 检测elemUrl是不是属于adUrl域名下的广告url,支持adUrl通配符匹配
+    // 使用*号通配符性能较差,应尽量避免配置含有通配符的广告域名
     function isAdDomain( elemUrl, adUrl ) {
+        if ( adUrl.indexOf( '*' ) == -1 )
+            return elemUrl.indexOf( adUrl ) > -1;
+        
         var es = elemUrl.split( '//' );
         var as = adUrl.split( '//' );
         try {
