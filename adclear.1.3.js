@@ -143,22 +143,24 @@
     // # 同步去获取与插件相同位置的广告黑名单
     ( function(){
         var t = new Date().getTime(),
-            xhr = new XMLHttpRequest(),
-            loadOver = function () {
+            xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
                 if( xhr.readyState == 4 && (xhr.status >= 200 && xhr.status < 300 || xhr.status ===304 || xhr.status ===0 || xhr.status === 1223) ){
+                    xhr.onreadystatechange = null;
                     testLog( 'Loading AD Black List \tused ' + (new Date().getTime() - t) + 'ms' );
                     var data = eval( '(' + xhr.responseText + '\n)' );
                     _adDomains = _adDomains.concat( data.blackList || [] );
                     _filterDomains = data.filterList || _filterDomains;
+                    doFixAdDomain();
+                    setTimeout( main, 10 ); // 载入黑名单完毕后执行主函数
                 }
             };
-        xhr.open( 'GET', _blackListUrl, false );
+        xhr.open( 'GET', _blackListUrl, true );
         xhr.send( null );
-        loadOver();
     } )();
     
     // # 去掉过滤出的广告域名, 从过滤列表中取得当前域名下需要过滤的域名
-    ( function() {
+    function doFixAdDomain() {
         // 当前域名正是广告域名,则忽视该广告域名
         for ( var j = 0; j < _adDomains.length; j++ ) {
             var adDomain = _adDomains[ j ];
@@ -186,7 +188,7 @@
                 }
             }
         }
-    } )();
+    }
     
     
     // # 特定域名下的广告(适用于特定站点过滤出广告,暂未实现)
@@ -866,8 +868,8 @@
     }
     
     
-    // 主入口
-    function main( findDepth ) {
+    // 开始清理
+    function startClear( findDepth ) {
         if ( window.top != window )
             return;
         
@@ -906,8 +908,10 @@
     var speedTime = 500, maxTime = 1 * 6 * 10 * 1000 + speedTime,
         startTime = new Date().getTime();
     
-    // 无阻塞方式渲执行清理 
-    setTimeout( function() {
+    
+    // # 主入口
+    // 无阻塞方式渲执行清理
+    function main() {
         testLogClearCount++;
 //        if ( testLogClearCount == 1 )
 //            log( '[广告清理 v' + _version + '] - 正在清理广告...' );
@@ -916,7 +920,7 @@
         
         // 调用主入口函数,默认检索深度为20层
         var t = new Date().getTime();
-        main( 20 );
+        startClear( 20 );
         var t2 = new Date().getTime() - t;
         
         testLogUseTime += t2;
@@ -1009,7 +1013,7 @@
                     + attrRulesCheckTotalCount + '，命中次数：' + attrRulesHitTotalCount + '，命中域名个数：' + attrRulesHitCount );
         }
     
-    }, 10 );
+    }
     
     
     // ####### 嵌入一个md5计算函数
