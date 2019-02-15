@@ -35,7 +35,7 @@
     
     // # 检索可能是广告元素的正则
     _tagNamesReg_box = /^div|a|img|table|iframe|span|ul|ins|em$/i,  // 符合定位检测的元素
-    _tagNamesReg_url = /^iframe|embed|object|a|img$/i,              // 符合URL检测的元素
+    // _tagNamesReg_url = /^iframe|embed|object|a|img$/i,              // 符合URL检测的元素, URL规则检测不再限定标签名
     
     // 符合background-image广告检测的元素, 以最小尺寸判别, 小于该尺寸不检查
     _minBgImgWidth  = 50,
