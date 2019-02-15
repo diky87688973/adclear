@@ -131,6 +131,10 @@
         type : 'attr',
         md5 : true,
         src : '226f3b9ff1d0f1fc465991b291e49c08'
+    }, {
+        // csdn
+        type : 'attr~=',
+        'class' : 'recommend-ad-box'
     } ],
     
     // # URL匹配规则, 广告域名, 适用于内容嵌入广告
