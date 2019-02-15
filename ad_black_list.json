@@ -43,6 +43,10 @@
         'img-ads.csdn.net',
         'edu.csdn.net/topic/ai30?utm_source=',
         'nbrecsys.4paradigm.com/api/v0/csdn',
+        "s3m.milkjpg.com",
+        
+        // iteye
+        'rabc2.iteye.com',
         
         'strip.taobaocdn.com',                  // 淘宝
         'inte.sogou.com/ct',                    // 搜狗
@@ -85,7 +89,6 @@
         'land.024888.net',
         '643108e7617ef.cdn.sohucs.com/*.jpg',
         'shop.zs516.com/adjrsh',
-        'rabc2.iteye.com',
         'g.ggxt.net/qa',
         'wa.gtimg.com',
         'www.cokolo.cn',
