@@ -789,7 +789,7 @@
             if (
                 // 任意元素,超过指定尺寸,或只要不是仅有一个img子节点(尺寸不超过指定尺寸的img),或者包含文字内容,则需要展示
                 (!isHide && ((elem.offsetWidth >= mWidth || elem.offsetHeight >= mHeight)
-                        || ((elem.textContent || elem.innerText).replace( /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '' ).length > 0)
+                        || ((elem.textContent || elem.innerText || '').replace( /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '' ).length > 0)
                         || !(elem.children.length <= 1 && /^img$/i.test( elem.children[ 0 ].nodeName ) && (elem.children[ 0 ].offsetWidth < mWidth && elem.children[ 0 ].offsetHeight < mHeight))))
                 // 任意元素,隐藏状态,但父元素具备tab关键字
                 || (isHide && (/(?:^|[-_\s])tab(?:[-_\s]|$)/i.test( wrap.id + ' ' + wrap.className )))
