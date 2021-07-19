@@ -65,6 +65,7 @@
         'googleads.g.doubleclick.net/pagead',
         'googleads.g.doubleclick.net/aclk',
         'tpc.googlesyndication.com/safeframe',
+        'googleads.g.doubleclick.net/pagead/ads',
         
         // 西部数码
         'www.west.cn/services/CloudHost/?ads=',
